@@ -25,7 +25,7 @@ class DummyModel:
         self.history = []
         self.logs = []
 
-    def step(self, control_input, delta_time=1.0):
+    def step(self, control_input, _delta_time=1.0):
         """Advance the dummy state by the control input.
 
         Args:
@@ -61,13 +61,11 @@ class DummyModel:
         self.logs.append(f"Params updated: {kwargs}")
 
 
-@pytest.fixture
-def sim_manager(monkeypatch):
-    """Fixture to provide a SimulationManager with a patched model registry."""
-    manager = SimulationManager()
-    manager._model_registry = {"dummy": DummyModel}
 
-    return manager
+@pytest.fixture
+def sim_manager():
+    """Fixture to provide a SimulationManager with a test model registry."""
+    return SimulationManager(model_registry={"dummy": DummyModel})
 
 
 def test_create_session(sim_manager):
