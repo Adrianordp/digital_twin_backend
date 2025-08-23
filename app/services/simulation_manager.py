@@ -19,10 +19,13 @@ from uuid import UUID, uuid4
 class SimulationManager:
     """Manages simulation sessions, state, history, and logs for all models."""
 
-    def __init__(self):
-        # Registry of model_name -> model class
-        self._model_registry: Dict[str, Type] = {}
-        # session_id -> model instance
+    def __init__(self, model_registry: Optional[Dict[str, Type]] = None):
+        """Initialize the SimulationManager.
+
+        Args:
+            model_registry (Optional[Dict[str, Type]]): Optional mapping of model names to model classes.
+        """
+        self._model_registry: Dict[str, Type] = model_registry or {}
         self._sessions: Dict[UUID, Any] = {}
 
     def create_session(
