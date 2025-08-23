@@ -3,7 +3,7 @@
 This module provides a factory function to instantiate different types of
 simulation systems based on their names. Currently supports:
 - water_tank: Water tank with configurable inflow/outflow
-- room_temp: Room with temperature control
+- room_temperature: Room with temperature control
 """
 
 from typing import Union
@@ -17,7 +17,7 @@ def get_system(system_name: str) -> Union[WaterTank, RoomTemperature]:
 
     Args:
         system_name (str): Name of the system to create. Valid values are
-            'water_tank' or 'room_temp'.
+            'water_tank' or 'room_temperature'.
 
     Returns:
         Union[WaterTank, RoomTemperature]: A new instance of the requested system.
@@ -27,7 +27,7 @@ def get_system(system_name: str) -> Union[WaterTank, RoomTemperature]:
     """
     if system_name == "water_tank":
         return WaterTank()
-    elif system_name == "room_temp":
+    elif system_name == "room_temperature":
         return RoomTemperature()
     else:
         raise ValueError(f"Unknown system: {system_name}")
