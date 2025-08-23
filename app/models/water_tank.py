@@ -19,7 +19,8 @@ class WaterTank:
         capacity (float): Maximum capacity of the tank.
         level (float): Current water level in the tank.
         inflow (float): Base inflow rate.
-        outflow_coeff (float): Coefficient determining the outflow rate proportional to level.
+        outflow_coeff (float): Coefficient determining the outflow rate
+            proportional to level.
     """
 
     def __init__(
@@ -33,8 +34,16 @@ class WaterTank:
         Args:
             capacity (float, optional): Tank capacity. Defaults to 100.0.
             inflow (float, optional): Initial inflow rate. Defaults to 0.0.
-            outflow_coeff (float, optional): Outflow rate coefficient. Defaults to 0.1.
+            outflow_coeff (float, optional): Outflow rate coefficient. Defaults
+            to 0.1.
+
+        Raises:
+            ValueError: If capacity is not positive or outflow_coefficient is
+                negative.
         """
+        if capacity <= 0:
+            raise ValueError("Tank capacity must be positive")
+
         self.capacity = capacity
         self.level = 0.0
         self.inflow = inflow
@@ -50,8 +59,14 @@ class WaterTank:
 
         Returns:
             float: Rate of change of water level (dh/dt).
+
+        Note:
+            Negative inflow is allowed and represents active draining (e.g.,
+            pumping out).
+            Level constraints are handled in the step method.
         """
-        outflow = self.outflow_coeff * level
+        # Apply outflow only if there's water in the tank
+        outflow = self.outflow_coeff * max(0.0, level)
 
         return inflow - outflow
 
@@ -60,12 +75,22 @@ class WaterTank:
 
         Args:
             control_input (float): Input value controlling the inflow rate.
+                Negative values represent active draining.
             delta_time (float, optional): Time step duration. Defaults to 1.0.
+
+        Raises:
+            ValueError: If delta_time is not positive.
         """
+        if delta_time <= 0:
+            raise ValueError("Time step must be positive")
+
         time = [0, delta_time]
-        self.level = odeint(
+        new_level = odeint(
             self.dynamics, self.level, time, args=(control_input,)
         )[-1][0]
+
+        # Enforce physical constraints
+        self.level = min(max(0.0, new_level), self.capacity)
 
     def get_state(self) -> Dict[str, float]:
         """Return the current state of the water tank.
