@@ -10,6 +10,10 @@ model implementations. They verify that:
 
 from uuid import UUID
 
+import pytest
+
+from app.services.simulation_manager import SimulationManager
+
 
 def test_create_session(sim_manager):
     """Test that a session can be created and returns a UUID."""
@@ -74,3 +78,72 @@ def test_update_params(sim_manager):
     logs = sim_manager.get_logs(session_id)
 
     assert any("Params updated" in log for log in logs)
+
+
+def test_register_model_allows_session_creation():
+    """Registering a model should allow creating a session with that name."""
+
+    class MinimalModel:
+        def __init__(self, **_kwargs):
+            pass
+
+        # Minimal interface to avoid usage during this test
+        def step(self, *_args, **_kwargs):
+            pass
+
+        def get_state(self):
+            return {}
+
+        def reset(self, **_kwargs):
+            pass
+
+        def update_params(self, **_kwargs):
+            pass
+
+    manager = SimulationManager()
+    manager.register_model("minimal", MinimalModel)
+
+    session_id = manager.create_session("minimal")
+
+    assert isinstance(session_id, UUID)
+
+
+def test_register_model_overwrites_existing_without_error():
+    """Registering an existing name should overwrite the previous model class."""
+
+    class ModelA:
+        def __init__(self, **_kwargs):
+            # If this constructor is called after overwrite, the test should fail
+            raise RuntimeError("ModelA should have been overwritten")
+
+    class ModelB:
+        def __init__(self, **_kwargs):
+            pass
+
+        def step(self, *_args, **_kwargs):
+            pass
+
+        def get_state(self):
+            return {}
+
+        def reset(self, **_kwargs):
+            pass
+
+        def update_params(self, **_kwargs):
+            pass
+
+    manager = SimulationManager({"foo": ModelA})
+    # Overwrite existing registration
+    manager.register_model("foo", ModelB)
+
+    # Should not raise (i.e., should use ModelB, not ModelA)
+    _ = manager.create_session("foo")
+
+
+def test_create_session_with_unregistered_model_raises_error():
+    """Creating a session for an unknown model should raise ValueError."""
+
+    manager = SimulationManager()
+
+    with pytest.raises(ValueError):
+        manager.create_session("not_registered")
