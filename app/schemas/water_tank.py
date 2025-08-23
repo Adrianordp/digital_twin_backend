@@ -22,4 +22,3 @@ class WaterTankParams(BaseModel):
     capacity: Optional[float] = Field(100.0, gt=0)
     inflow: Optional[float] = Field(0.0)
     outflow_coeff: Optional[float] = Field(0.1)
-    outflow_coeff: Optional[float] = Field(0.1)
