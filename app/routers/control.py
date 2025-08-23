@@ -36,7 +36,10 @@ def apply_control(
             control input, or an error message if system not initialized.
     """
     system = systems.get(system_name)
+
     if not system:
         return {"error": "System not initialized"}
+
     system.step(control_input)
+
     return system.get_state()
