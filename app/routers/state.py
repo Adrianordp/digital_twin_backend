@@ -28,6 +28,8 @@ def get_state(system_name: str) -> Dict[str, Union[float, str]]:
             initialized.
     """
     system = systems.get(system_name)
+
     if not system:
         return {"error": "System not initialized"}
+
     return system.get_state()
