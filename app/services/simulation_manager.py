@@ -23,7 +23,8 @@ class SimulationManager:
         """Initialize the SimulationManager.
 
         Args:
-            model_registry (Optional[Dict[str, Type]]): Optional mapping of model names to model classes.
+            model_registry (Optional[Dict[str, Type]]): Optional mapping of
+                model names to model classes.
         """
         self._model_registry: Dict[str, Type] = model_registry or {}
         self._sessions: Dict[UUID, Any] = {}
