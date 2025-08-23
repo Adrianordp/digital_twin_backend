@@ -52,6 +52,7 @@ class WaterTank:
             float: Rate of change of water level (dh/dt).
         """
         outflow = self.outflow_coeff * level
+
         return inflow - outflow
 
     def step(self, control_input: float, delta_time: float = 1.0) -> None:
