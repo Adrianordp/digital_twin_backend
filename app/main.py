@@ -22,9 +22,10 @@ from app.services.sim_manager_instance import sim_manager
 
 app = FastAPI(title="Dual-System Digital Twin")
 
+
 # Register models with the shared SimulationManager instance
-sim_manager._model_registry["water_tank"] = WaterTank
-sim_manager._model_registry["room_temperature"] = RoomTemperature
+sim_manager.register_model("water_tank", WaterTank)
+sim_manager.register_model("room_temperature", RoomTemperature)
 
 
 app.include_router(simulate.router)
