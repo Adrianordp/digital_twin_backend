@@ -1,3 +1,40 @@
+# Roadmap
+
+## Simulation API Integration Roadmap
+
+1. **Model Registration**  
+   ✅ Done! Models are registered via a public method, and tests are in place.
+
+2. **Router Integration**  
+   ✅ Done! The new session-based simulation router is included in your FastAPI app.
+
+3. **Schema & Validation Enhancements**  
+   ✅ Done! Schemas are well-documented and validated.
+
+4. **Testing**  
+   ✅ Done! Comprehensive unit tests for SimulationManager, including model registration.
+
+5. **Frontend/Client Integration**  
+   ⬜ Next: Document/test the new endpoints with a client or frontend.
+
+6. **Session Management Improvements**  
+   ⬜ Optional: Add session expiration, cleanup, or persistence if needed.
+
+7. **Monitoring & Logging**  
+   ⬜ Optional: Add logging/metrics for production.
+
+8. **Documentation**  
+   ⬜ Next: Update README and API docs to reflect the new session-based workflow.
+
+---
+
+## Next Steps
+
+- **Test the API Endpoints:** Use curl, httpie, or Swagger UI to verify the new endpoints work as expected.
+- **Integrate with Frontend:** If you have a frontend, update it to use the new session-based endpoints.
+- **Add API/Integration Tests:** (Optional) Write tests that hit the FastAPI endpoints directly.
+- **Document the API:** Update your README and/or OpenAPI docs.
+
 # Dual-System Digital Twin
 
 A small FastAPI-based digital twin backend that provides lightweight simulation
