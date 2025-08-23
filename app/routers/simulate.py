@@ -1,7 +1,7 @@
 """Simulation router for initializing and stepping system states.
 
-This module provides endpoints to create and simulate system instances. It maintains
-a dictionary of active systems that can be accessed by other routers.
+This module provides endpoints to create and simulate system instances. It
+maintains a dictionary of active systems that can be accessed by other routers.
 """
 
 from typing import Dict, Union
