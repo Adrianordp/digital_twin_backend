@@ -8,7 +8,6 @@ This module implements a water tank model with:
 
 from typing import Dict
 
-import numpy as np
 from scipy.integrate import odeint
 
 
