@@ -75,7 +75,7 @@ inputs.
   - Description: Initialize (if needed) and step the named system by one time
     step using the provided control input.
   - Parameters:
-    - Path: `system_name` — e.g. `water_tank` or `room_temp`
+    - Path: `system_name` — e.g. `water_tank` or `room_temperature`
     - Query/body: `control_input` (float)
   - Response: JSON state returned by the model's `get_state()` method.
 
