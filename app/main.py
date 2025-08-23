@@ -13,10 +13,21 @@ The API is structured around routers that handle different aspects:
 
 from fastapi import FastAPI
 
-from app.routers import control, simulate, state
+from app.models.room_temperature import RoomTemperature
+from app.models.water_tank import WaterTank
+from app.routers import control, simulate
+from app.routers import simulation as simulation_router
+from app.routers import state
+from app.services.sim_manager_instance import sim_manager
 
 app = FastAPI(title="Dual-System Digital Twin")
+
+# Register models with the shared SimulationManager instance
+sim_manager._model_registry["water_tank"] = WaterTank
+sim_manager._model_registry["room_temperature"] = RoomTemperature
+
 
 app.include_router(simulate.router)
 app.include_router(state.router)
 app.include_router(control.router)
+app.include_router(simulation_router.router)

@@ -18,10 +18,7 @@ from app.schemas.simulation import (
     StepRequest,
     UpdateParamsRequest,
 )
-from app.services.simulation_manager import SimulationManager
-
-# Shared SimulationManager instance (could be replaced with DI or app state)
-sim_manager = SimulationManager()
+from app.services.sim_manager_instance import sim_manager
 
 router = APIRouter(prefix="/simulate", tags=["simulation"])
 
