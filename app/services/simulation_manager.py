@@ -92,6 +92,10 @@ class SimulationManager:
 
         return model.get_state()
 
+    def register_model(self, name: str, model_cls: Type) -> None:
+        """Register a model class with a given name."""
+        self._model_registry[name] = model_cls
+
     def _get_model(self, session_id: UUID) -> Any:
         """Retrieve the model instance for the given session ID."""
         if session_id not in self._sessions:
