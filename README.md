@@ -23,9 +23,8 @@ building digital twins and control/simulation APIs.
 ## Project structure
 
 - `app/main.py` — FastAPI application entrypoint
-- `app/routers/simulation.py` — Session-based simulation endpoints (`/simulate/*`)
-- `app/routers/control.py` — Legacy control endpoints (for compatibility)
-- `app/routers/state.py` — Legacy state endpoints (for compatibility)
+- `app/routers/simulation.py` — Session-based simulation endpoints
+    (`/simulate/*`)
 - `app/models/` — System model implementations (factory, water_tank, room_temperature)
 - `app/services/` — SimulationManager and session management services
 - `app/schemas/` — Pydantic models for API request/response validation
@@ -73,11 +72,7 @@ docker run -p 8000:8000 digital-twin-backend
 
 ## API: Session-Based Workflow
 
-The API provides both modern session-based endpoints and legacy endpoints for backward compatibility.
-
-### Modern Session-Based API
-
-All new applications should use the session-based endpoints under `/simulate/*`. Each simulation runs in an isolated session with its own state, history, and logs.
+The API provides session-based endpoints where each simulation runs in an isolated session with its own state, history, and logs.
 
 ### Session Lifecycle
 
@@ -129,17 +124,8 @@ curl -X POST "http://localhost:8000/simulate/step" \
 curl "http://localhost:8000/simulate/state/123e4567-e89b-12d3-a456-426614174000"
 ```
 
-### Legacy API (Deprecated)
-
-The legacy endpoints are still available for backward compatibility but should not be used in new applications:
-
-- `POST /simulate/{system_name}?control_input=X` - Creates/steps a global system instance
-- `POST /control/{system_name}?control_input=X` - Controls a global system instance  
-- `GET /state/{system_name}` - Gets state of a global system instance
-
 ### Endpoints Summary
 
-**Modern Session-Based:**
 - `POST /simulate/init`: Initialize a new simulation session
 - `POST /simulate/step`: Advance simulation by one step
 - `GET /simulate/state/{session_id}`: Get current state
@@ -147,11 +133,6 @@ The legacy endpoints are still available for backward compatibility but should n
 - `GET /simulate/logs/{session_id}`: Get model logs
 - `POST /simulate/reset`: Reset simulation with optional new parameters
 - `PATCH /simulate/params`: Update model parameters
-
-**Legacy (Deprecated):**
-- `POST /simulate/{system_name}`: Initialize/step a global system instance
-- `POST /control/{system_name}`: Control a global system instance
-- `GET /state/{system_name}`: Get state of a global system instance
 
 
 ## Session Persistence
