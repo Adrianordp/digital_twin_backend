@@ -19,7 +19,7 @@ class SessionInitRequest(BaseModel):
         params (dict, optional): Model-specific initialization parameters.
     """
 
-    model_name: str = Field(..., example="water_tank")
+    model_name: str = Field(..., json_schema_extra={"example": "water_tank"})
     params: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
 
