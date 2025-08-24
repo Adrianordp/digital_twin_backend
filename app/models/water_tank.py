@@ -10,8 +10,10 @@ from typing import Dict
 
 from scipy.integrate import odeint
 
+from app.models.system_model import SystemModel
 
-class WaterTank:
+
+class WaterTank(SystemModel):
     """A water tank model with configurable inflow and outflow dynamics.
 
     Attributes:
@@ -28,18 +30,21 @@ class WaterTank:
         inflow: float = 0.0,
         outflow_coeff: float = 0.1,
     ) -> None:
-        """Initialize the water tank model.
+        """
+        Initialize a WaterTank instance.
 
         Args:
-            capacity (float, optional): Tank capacity. Defaults to 100.0.
-            inflow (float, optional): Initial inflow rate. Defaults to 0.0.
-            outflow_coeff (float, optional): Outflow rate coefficient. Defaults
-            to 0.1.
+            capacity (float, optional): Maximum capacity of the tank. Must be
+                positive. Defaults to 100.0.
+            inflow (float, optional): Base inflow rate. Defaults to 0.0.
+            outflow_coeff (float, optional): Outflow coefficient. Defaults to
+                0.1.
 
         Raises:
-            ValueError: If capacity is not positive or outflow_coefficient is
-                negative.
+            ValueError: If capacity is not positive.
         """
+        super().__init__()
+
         if capacity <= 0:
             raise ValueError("Tank capacity must be positive")
 
@@ -49,7 +54,8 @@ class WaterTank:
         self.outflow_coeff = outflow_coeff
 
     def dynamics(self, level: float, _time: float, inflow: float) -> float:
-        """Calculate the rate of change of water level.
+        """
+        Calculate the rate of change of water level.
 
         Args:
             level (float): Current water level.
@@ -70,12 +76,13 @@ class WaterTank:
         return inflow - outflow
 
     def step(self, control_input: float, delta_time: float = 1.0) -> None:
-        """Advance the simulation by the specified time step.
+        """
+        Advance the simulation by the specified time step.
 
         Args:
-            control_input (float): Input value controlling the inflow rate.
-                Negative values represent active draining.
-            delta_time (float, optional): Time step duration. Defaults to 1.0.
+            control_input (float): The inflow rate to apply during this step.
+            delta_time (float, optional): The time increment for the simulation
+                step. Defaults to 1.0.
 
         Raises:
             ValueError: If delta_time is not positive.
@@ -88,13 +95,48 @@ class WaterTank:
             self.dynamics, self.level, time, args=(control_input,)
         )[-1][0]
 
-        # Enforce physical constraints
         self.level = min(max(0.0, new_level), self.capacity)
 
+        self.history.append(self.get_state())
+        self.logs.append(
+            f"Stepped with input {control_input}, delta_time {delta_time}"
+        )
+
     def get_state(self) -> Dict[str, float]:
-        """Return the current state of the water tank.
+        """
+        Return the current state of the water tank.
 
         Returns:
-            dict: Dictionary containing the current water level.
+            Dict[str, float]: Dictionary containing the current water level.
         """
         return {"level": self.level}
+
+    def reset(self, **kwargs) -> None:
+        """
+        Reset the water tank to initial state, optionally with new parameters.
+
+        Args:
+            **kwargs: Optional new parameters for capacity, inflow, and
+                outflow_coeff.
+        """
+        self.capacity = kwargs.get("capacity", self.capacity)
+        self.inflow = kwargs.get("inflow", self.inflow)
+        self.outflow_coeff = kwargs.get("outflow_coeff", self.outflow_coeff)
+        self.level = 0.0
+        self.history.clear()
+        self.logs.append("Reset called")
+
+    def update_params(self, **kwargs) -> None:
+        """
+        Update model parameters and log the change.
+
+        Args:
+            **kwargs: Model parameters to update (capacity, inflow,
+                outflow_coeff).
+        """
+        for k, v in kwargs.items():
+
+            if hasattr(self, k):
+                setattr(self, k, v)
+
+        self.logs.append(f"Params updated: {kwargs}")
