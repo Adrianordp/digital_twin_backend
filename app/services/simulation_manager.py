@@ -12,9 +12,12 @@ state, history of states, and log messages, as well as resetting and updating
 model parameters.
 """
 
+import pickle
 import time
 from typing import Any, Dict, List, Optional, Type
 from uuid import UUID, uuid4
+
+from app.services.session_store import get_session_store
 
 
 class SimulationManager:
@@ -22,16 +25,25 @@ class SimulationManager:
 
     SESSION_TIMEOUT_SECONDS = 30 * 60  # 30 minutes
 
-    def __init__(self, model_registry: Optional[Dict[str, Type]] = None):
+    def __init__(
+        self,
+        model_registry: Optional[Dict[str, Type]] = None,
+        persistence: str = "memory",
+        redis_config: Optional[dict] = None,
+    ):
         """Initialize the SimulationManager.
 
         Args:
             model_registry (Optional[Dict[str, Type]]): Optional mapping of
                 model names to model classes.
+            persistence (str): 'memory' or 'redis'.
+            redis_config (dict): Redis connection kwargs if using redis.
         """
         self._model_registry: Dict[str, Type] = model_registry or {}
-        # Each session: UUID -> (model, last_access_time)
-        self._sessions: Dict[UUID, Any] = {}
+        self._persistence = persistence
+        self._session_store = get_session_store(
+            persistence, **(redis_config or {})
+        )
 
     def create_session(
         self, model_name: str, params: Optional[Dict[str, Any]] = None
@@ -47,7 +59,13 @@ class SimulationManager:
         model = model_cls(**params)
         session_id = uuid4()
         now = time.time()
-        self._sessions[session_id] = (model, now)
+        # Store as (model_name, pickled_model, last_access)
+        session_key = f"sim_session:{session_id}"
+        self._session_store.set(
+            session_key,
+            (model_name, pickle.dumps(model), now),
+            ex=self.SESSION_TIMEOUT_SECONDS,
+        )
 
         return session_id
 
@@ -58,6 +76,7 @@ class SimulationManager:
         self._cleanup_expired_sessions()
         model = self.get_model(session_id)
         model.step(control_input, delta_time)
+        self._save_model(session_id, model)
 
         return model.get_state()
 
@@ -91,6 +110,7 @@ class SimulationManager:
         model = self.get_model(session_id)
         params = params or {}
         model.reset(**params)
+        self._save_model(session_id, model)
 
         return model.get_state()
 
@@ -101,6 +121,7 @@ class SimulationManager:
         self._cleanup_expired_sessions()
         model = self.get_model(session_id)
         model.update_params(**params)
+        self._save_model(session_id, model)
 
         return model.get_state()
 
@@ -111,22 +132,55 @@ class SimulationManager:
     def get_model(self, session_id: UUID) -> Any:
         """Retrieve the model instance for the given session ID and update last
         access time."""
-        if session_id not in self._sessions:
+        session_key = f"sim_session:{session_id}"
+        session = self._session_store.get(session_key)
+
+        if not session:
             raise ValueError(f"Unknown session: {session_id}")
 
-        model, _ = self._sessions[session_id]
-        self._sessions[session_id] = (model, time.time())
-
+        model_name, pickled_model, _ = session
+        model = pickle.loads(pickled_model)
+        # Update last access and TTL
+        now = time.time()
+        self._session_store.set(
+            session_key,
+            (model_name, pickle.dumps(model), now),
+            ex=self.SESSION_TIMEOUT_SECONDS,
+        )
         return model
 
     def _cleanup_expired_sessions(self):
-        """Remove sessions that have expired based on last access time."""
-        now = time.time()
-        expired = [
-            sid
-            for sid, (_, last_access) in self._sessions.items()
-            if now - last_access > self.SESSION_TIMEOUT_SECONDS
-        ]
+        """Remove expired sessions (only relevant for in-memory mode)."""
+        if self._persistence != "memory":
+            return
 
-        for sid in expired:
-            del self._sessions[sid]
+        # Only clean up in-memory sessions
+        now = time.time()
+        keys = list(self._session_store._sessions.keys())
+
+        for key in keys:
+            entry = self._session_store._sessions.get(key)
+
+            if not entry:
+                continue
+
+            _, _, expiry = entry
+
+            if expiry is not None and now > expiry:
+                self._session_store.delete(key)
+
+    def _save_model(self, session_id: UUID, model: Any):
+        """Helper to save the model state to the session store."""
+        session_key = f"sim_session:{session_id}"
+        session = self._session_store.get(session_key)
+
+        if not session:
+            raise ValueError(f"Unknown session: {session_id}")
+
+        model_name, _, _ = session
+        now = time.time()
+        self._session_store.set(
+            session_key,
+            (model_name, pickle.dumps(model), now),
+            ex=self.SESSION_TIMEOUT_SECONDS,
+        )
