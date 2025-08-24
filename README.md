@@ -1,63 +1,3 @@
-# Roadmap
-
-## Simulation API Integration Roadmap
-
-1. **Model Registration**
-   ✅ Done! Models are registered via a public method, and tests are in place.
-
-2. **Router Integration**
-   ✅ Done! The new session-based simulation router is included in your FastAPI app.
-
-3. **Schema & Validation Enhancements**
-   ✅ Done! Schemas are well-documented and validated.
-
-4. **Testing**
-   ✅ Done! Comprehensive unit tests for SimulationManager, including model registration.
-
-5. **Frontend/Client Integration**
-   ✅ Done! Endpoints are documented and tested with a Jupyter notebook and example curl commands.
-
-6. **Session Management Improvements**
-   ✅ Session expiration, cleanup, and persistence (in-memory or Redis) supported.
-
-7. **Monitoring & Logging**
-   ✅ Basic Python logging added to SimulationManager. See below for usage and configuration.
-
-8. **Documentation**
-   ✅ Done! README and API docs updated to reflect the new session-based workflow.
-
----
-
-
-## Logging
-
-The backend uses Python's built-in `logging` module for key events in the simulation manager (session creation, expiration, and errors).
-
-To enable logging output, configure logging in your application entrypoint (e.g., `app/main.py`):
-
-
-```python
-import logging
-
-# Log to 'digital_twin.log', overwrite file on each server start
-logging.basicConfig(
-    level=logging.INFO,  # or DEBUG for more detail
-    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-    filename="digital_twin.log",
-    filemode="w"  # Overwrite log file on each run
-)
-```
-
-You can further customize logging handlers, levels, or direct logs to files as needed. All logs from the simulation manager use the logger name `SimulationManager`.
-
----
-## Next Steps
-
-- **Test the API Endpoints:** Use curl, httpie, or Swagger UI to verify the new endpoints work as expected.
-- **Integrate with Frontend:** If you have a frontend, update it to use the new session-based endpoints.
-- **Add API/Integration Tests:** (Optional) Write tests that hit the FastAPI endpoints directly.
-- **Document the API:** Update your README and/or OpenAPI docs.
-
 # Dual-System Digital Twin
 
 A small FastAPI-based digital twin backend that provides lightweight simulation
@@ -222,6 +162,27 @@ The simulation manager supports both in-memory and Redis-backed session persiste
    ```
 
 Sessions are automatically expired and cleaned up in both modes.
+
+
+## Logging
+
+The backend uses Python's built-in `logging` module for key events in the simulation manager (session creation, expiration, and errors).
+
+To enable logging output, configure logging in your application entrypoint (e.g., `app/main.py`):
+
+```python
+import logging
+
+# Log to 'digital_twin.log', overwrite file on each server start
+logging.basicConfig(
+    level=logging.INFO,  # or DEBUG for more detail
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    filename="digital_twin.log",
+    filemode="w"  # Overwrite log file on each run
+)
+```
+
+You can further customize logging handlers, levels, or direct logs to files as needed. All logs from the simulation manager use the logger name `SimulationManager`.
 
 
 ## Tests
