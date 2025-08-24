@@ -57,5 +57,35 @@ class DummyModel:
 
 @pytest.fixture
 def sim_manager():
-    """Fixture to provide a SimulationManager with a test model registry."""
+    """
+    Fixture to provide a SimulationManager with a test model registry
+    (in-memory).
+    """
     return SimulationManager(model_registry={"dummy": DummyModel})
+
+
+# Optional: Redis-backed fixture (requires running Redis server)
+@pytest.fixture(scope="module")
+def sim_manager_redis():
+    """
+    Fixture to provide a SimulationManager with Redis persistence (requires
+    Redis).
+    """
+    try:
+        mgr = SimulationManager(
+            model_registry={"dummy": DummyModel},
+            persistence="redis",
+            redis_config={"host": "localhost", "port": 6379, "db": 0},
+        )
+        # Test connection
+        mgr._session_store._client.ping()
+
+        return mgr
+    except (ImportError, AttributeError, KeyError):
+        pytest.skip(
+            "Redis dependencies not available for sim_manager_redis fixture."
+        )
+    except (ConnectionError, TimeoutError):
+        pytest.skip(
+            "Redis server not available for sim_manager_redis fixture."
+        )
