@@ -12,6 +12,7 @@ state, history of states, and log messages, as well as resetting and updating
 model parameters.
 """
 
+import logging
 import pickle
 import time
 from typing import Any, Dict, List, Optional, Type
@@ -30,6 +31,7 @@ class SimulationManager:
         model_registry: Optional[Dict[str, Type]] = None,
         persistence: str = "memory",
         redis_config: Optional[dict] = None,
+        logger: Optional[logging.Logger] = None,
     ):
         """Initialize the SimulationManager.
 
@@ -39,11 +41,12 @@ class SimulationManager:
             persistence (str): 'memory' or 'redis'.
             redis_config (dict): Redis connection kwargs if using redis.
         """
-        self._model_registry: Dict[str, Type] = model_registry or {}
+        self._model_registry = model_registry or {}
         self._persistence = persistence
         self._session_store = get_session_store(
             persistence, **(redis_config or {})
         )
+        self._logger = logger or logging.getLogger("SimulationManager")
 
     def create_session(
         self, model_name: str, params: Optional[Dict[str, Any]] = None
@@ -52,6 +55,7 @@ class SimulationManager:
         self._cleanup_expired_sessions()
 
         if model_name not in self._model_registry:
+            self._logger.error("Unknown model: %s", model_name)
             raise ValueError(f"Unknown model: {model_name}")
 
         model_cls = self._model_registry[model_name]
@@ -66,7 +70,9 @@ class SimulationManager:
             (model_name, pickle.dumps(model), now),
             ex=self.SESSION_TIMEOUT_SECONDS,
         )
-
+        self._logger.info(
+            "Session created: %s for model %s", session_id, model_name
+        )
         return session_id
 
     def step(
@@ -136,6 +142,7 @@ class SimulationManager:
         session = self._session_store.get(session_key)
 
         if not session:
+            self._logger.error("Unknown session: %s", session_id)
             raise ValueError(f"Unknown session: {session_id}")
 
         model_name, pickled_model, _ = session
@@ -168,6 +175,7 @@ class SimulationManager:
 
             if expiry is not None and now > expiry:
                 self._session_store.delete(key)
+                self._logger.info("Session expired and removed: %s", key)
 
     def _save_model(self, session_id: UUID, model: Any):
         """Helper to save the model state to the session store."""
