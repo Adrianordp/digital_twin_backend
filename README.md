@@ -18,7 +18,7 @@
    ✅ Next: Document/test the new endpoints with a client or frontend.
 
 6. **Session Management Improvements**
-   ⬜ Optional: Add session expiration, cleanup, or persistence if needed.
+   ✅ Session expiration, cleanup, and persistence (in-memory or Redis) supported.
 
 7. **Monitoring & Logging**
    ⬜ Optional: Add logging/metrics for production.
@@ -144,14 +144,48 @@ inputs.
   curl "http://localhost:8000/state/water_tank"
   ```
 
-Notes
 
-- The endpoints accept `control_input` as a query parameter for the simple
-  function signatures used in the code. You can adapt the routers to accept
-  JSON bodies or pydantic models when more structure is needed.
-- Systems are kept in-memory in the running process
-  (`app.routers.simulate.systems`). For production use you will likely want
-  persistent state or a dedicated simulation manager.
+## Session Persistence
+
+The simulation manager supports both in-memory and Redis-backed session persistence.
+
+- **In-memory mode** (default): Sessions are stored in the process memory and lost on restart.
+- **Redis mode**: Sessions are stored in Redis, allowing persistence across restarts and scaling to multiple processes.
+
+### How to use Redis persistence
+
+1. Install and run a Redis server (locally or in Docker):
+
+   ```bash
+   docker run -p 6379:6379 redis:7
+   ```
+
+2. Install the Python Redis client (already in Poetry dependencies):
+
+   ```bash
+   poetry add redis
+   ```
+
+3. Instantiate the simulation manager with Redis:
+
+   ```python
+   from app.services.simulation_manager import SimulationManager
+
+   sim_manager = SimulationManager(
+       model_registry=...,  # your models
+       persistence='redis',
+       redis_config={'host': 'localhost', 'port': 6379, 'db': 0}
+   )
+   ```
+
+4. For in-memory mode (default):
+
+   ```python
+   sim_manager = SimulationManager(model_registry=...)
+   ```
+
+Sessions are automatically expired and cleaned up in both modes.
+
 
 ## Tests
 
@@ -160,6 +194,8 @@ Run the test suite with pytest:
 ```bash
 poetry run pytest -q
 ```
+
+To run tests with Redis persistence, ensure Redis is running and set up the simulation manager in your tests with `persistence='redis'` and the appropriate `redis_config`.
 
 ## Extending the project
 
