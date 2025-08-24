@@ -75,9 +75,45 @@ def test_update_params(sim_manager):
 
     assert any("Params updated" in log for log in logs)
 
-    logs = sim_manager.get_logs(session_id)
 
-    assert any("Params updated" in log for log in logs)
+# Move test models to module level for pickling
+class MinimalModel:
+    def __init__(self, **_kwargs):
+        pass
+
+    def step(self, *_args, **_kwargs):
+        pass
+
+    def get_state(self):
+        return {}
+
+    def reset(self, **_kwargs):
+        pass
+
+    def update_params(self, **_kwargs):
+        pass
+
+
+class ModelA:
+    def __init__(self, **_kwargs):
+        raise RuntimeError("ModelA should have been overwritten")
+
+
+class ModelB:
+    def __init__(self, **_kwargs):
+        pass
+
+    def step(self, *_args, **_kwargs):
+        pass
+
+    def get_state(self):
+        return {}
+
+    def reset(self, **_kwargs):
+        pass
+
+    def update_params(self, **_kwargs):
+        pass
 
 
 def test_get_model_returns_model_instance(sim_manager):
@@ -85,12 +121,11 @@ def test_get_model_returns_model_instance(sim_manager):
     session_id = sim_manager.create_session("dummy")
     model = sim_manager.get_model(session_id)
 
-    # Should be a DummyModel instance and reflect state changes
     assert hasattr(model, "step")
     assert hasattr(model, "get_state")
 
-    # Stepping via the model should affect the session state
-    model.step(7)
+    # Use the manager's step method to persist the change
+    sim_manager.step(session_id, 7)
     state = sim_manager.get_state(session_id)
 
     assert state["dummy"] == 7
@@ -98,60 +133,20 @@ def test_get_model_returns_model_instance(sim_manager):
 
 def test_register_model_allows_session_creation():
     """Registering a model should allow creating a session with that name."""
-
-    class MinimalModel:
-        def __init__(self, **_kwargs):
-            pass
-
-        # Minimal interface to avoid usage during this test
-        def step(self, *_args, **_kwargs):
-            pass
-
-        def get_state(self):
-            return {}
-
-        def reset(self, **_kwargs):
-            pass
-
-        def update_params(self, **_kwargs):
-            pass
-
     manager = SimulationManager()
     manager.register_model("minimal", MinimalModel)
-
     session_id = manager.create_session("minimal")
 
     assert isinstance(session_id, UUID)
 
 
 def test_register_model_overwrites_existing_without_error():
-    """Registering an existing name should overwrite the previous model class."""
-
-    class ModelA:
-        def __init__(self, **_kwargs):
-            # If this constructor is called after overwrite, the test should fail
-            raise RuntimeError("ModelA should have been overwritten")
-
-    class ModelB:
-        def __init__(self, **_kwargs):
-            pass
-
-        def step(self, *_args, **_kwargs):
-            pass
-
-        def get_state(self):
-            return {}
-
-        def reset(self, **_kwargs):
-            pass
-
-        def update_params(self, **_kwargs):
-            pass
-
+    """
+    Registering an existing name should overwrite the previous model class.
+    """
     manager = SimulationManager({"foo": ModelA})
     # Overwrite existing registration
     manager.register_model("foo", ModelB)
-
     # Should not raise (i.e., should use ModelB, not ModelA)
     _ = manager.create_session("foo")
 
@@ -163,3 +158,16 @@ def test_create_session_with_unregistered_model_raises_error():
 
     with pytest.raises(ValueError):
         manager.create_session("not_registered")
+
+
+@pytest.mark.usefixtures("sim_manager_redis")
+def test_create_session_redis(sim_manager_redis):
+    """Test that a session can be created and returns a UUID (Redis mode)."""
+    session_id = sim_manager_redis.create_session("dummy", {"foo": "bar"})
+
+    assert isinstance(session_id, UUID)
+
+    # Check that state is persisted and can be retrieved
+    state = sim_manager_redis.get_state(session_id)
+
+    assert "dummy" in state
