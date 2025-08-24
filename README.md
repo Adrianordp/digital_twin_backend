@@ -12,34 +12,38 @@ building digital twins and control/simulation APIs.
 
 ## Features
 
-- REST endpoints to create/simulate systems and read their state
+- Session-based REST API for simulation management
+- Multiple simulation instances with isolated state
+- Session persistence (in-memory or Redis)
+- Structured request/response models with Pydantic validation
+- Comprehensive logging and monitoring
 - Simple modular model structure (models in `app/models`)
-- Example test for the water tank model
+- Comprehensive test suite with pytest
 
 ## Project structure
 
 - `app/main.py` — FastAPI application entrypoint
-- `app/routers/simulate.py` — `/simulate/{system_name}` (POST) to advance a
-  system by one time step using a control input
-- `app/routers/control.py` — `/control/{system_name}` (POST) to apply control
-  to an already-initialized system
-- `app/routers/state.py` — `/state/{system_name}` (GET) to read a system's
-  current state
-- `app/models/` — system model implementations (factory, water_tank,
-  room_temperature)
-- `app/services/` — placeholder for ML or other services
-- `tests/` — basic pytest unit tests
+- `app/routers/simulation.py` — Session-based simulation endpoints (`/simulate/*`)
+- `app/routers/control.py` — Legacy control endpoints (for compatibility)
+- `app/routers/state.py` — Legacy state endpoints (for compatibility)
+- `app/models/` — System model implementations (factory, water_tank, room_temperature)
+- `app/services/` — SimulationManager and session management services
+- `app/schemas/` — Pydantic models for API request/response validation
+- `tests/` — Comprehensive unit and integration tests
 
 ## Requirements
 
 - Python 3.13+ (project uses modern Python features)
 - Poetry (recommended) or pip for dependency management
-- Dependencies (declare in `pyproject.toml`):
+- Dependencies (declared in `pyproject.toml`):
   - fastapi
   - uvicorn
+  - pydantic
   - numpy
   - scipy
-  - pytest
+  - httpx (for API client examples)
+  - redis (for session persistence)
+  - pytest (development/testing)
 
 ## Quick start (with Poetry)
 
@@ -69,57 +73,85 @@ docker run -p 8000:8000 digital-twin-backend
 
 ## API: Session-Based Workflow
 
-All endpoints are defined in `app/routers` and use a session-based workflow. Each simulation is managed in a session, which is created and tracked automatically by the backend. Sessions allow you to simulate, control, and query the state of individual system instances.
+The API provides both modern session-based endpoints and legacy endpoints for backward compatibility.
+
+### Modern Session-Based API
+
+All new applications should use the session-based endpoints under `/simulate/*`. Each simulation runs in an isolated session with its own state, history, and logs.
 
 ### Session Lifecycle
 
-1. **Start a Simulation Session**
-   - Use `POST /simulate/{system_name}` to create a new session (if one does not exist) and advance the simulation by one step.
-   - The backend returns the current state and a session cookie (or token) to identify your session.
+1. **Initialize a Simulation Session**
+   - Use `POST /simulate/init` to create a new session and return a session ID.
 
-2. **Advance Simulation or Apply Control**
-   - Use `POST /simulate/{system_name}` or `POST /control/{system_name}` to advance the simulation or apply control input. The session is identified by the session cookie/token.
+2. **Step the Simulation**
+   - Use `POST /simulate/step` to advance the simulation by one time step.
 
-3. **Query State**
-   - Use `GET /state/{system_name}` to retrieve the current state for your session.
+3. **Query State, History, or Logs**
+   - Use `GET /simulate/state/{session_id}` to get current state.
+   - Use `GET /simulate/history/{session_id}` to get simulation history.
+   - Use `GET /simulate/logs/{session_id}` to get model logs.
 
-4. **Session Expiration**
-   - Sessions expire automatically after a period of inactivity (default: 30 minutes).
+4. **Reset or Update Parameters**
+   - Use `POST /simulate/reset` to reset the simulation with optional new parameters.
+   - Use `PATCH /simulate/params` to update model parameters.
 
 ### Example Usage
 
-#### 1. Start a Simulation Session and Step
+#### 1. Initialize a New Session
 
 ```bash
-curl -X POST \
-  -c cookies.txt \
-  "http://localhost:8000/simulate/water_tank?control_input=10.0"
+curl -X POST "http://localhost:8000/simulate/init" \
+  -H "Content-Type: application/json" \
+  -d '{"model_name": "water_tank", "params": {}}'
 ```
 
-#### 2. Apply Control Input (using session cookie)
+Response:
+```json
+{"session_id": "123e4567-e89b-12d3-a456-426614174000"}
+```
+
+#### 2. Step the Simulation
 
 ```bash
-curl -X POST \
-  -b cookies.txt \
-  "http://localhost:8000/control/water_tank?control_input=5.0"
+curl -X POST "http://localhost:8000/simulate/step" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "123e4567-e89b-12d3-a456-426614174000",
+    "control_input": 10.0,
+    "delta_time": 1.0
+  }'
 ```
 
-#### 3. Query State (using session cookie)
+#### 3. Get Current State
 
 ```bash
-curl -b cookies.txt "http://localhost:8000/state/water_tank"
+curl "http://localhost:8000/simulate/state/123e4567-e89b-12d3-a456-426614174000"
 ```
 
-> **Note:**
-> - The backend manages sessions using cookies by default. If you use a custom client, ensure cookies are preserved between requests.
-> - Each session is tied to a specific system instance and user.
-> - Sessions are stored in memory or Redis, depending on configuration.
+### Legacy API (Deprecated)
+
+The legacy endpoints are still available for backward compatibility but should not be used in new applications:
+
+- `POST /simulate/{system_name}?control_input=X` - Creates/steps a global system instance
+- `POST /control/{system_name}?control_input=X` - Controls a global system instance  
+- `GET /state/{system_name}` - Gets state of a global system instance
 
 ### Endpoints Summary
 
-- `POST /simulate/{system_name}`: Initialize (if needed) and step the named system by one time step using the provided control input. Returns current state.
-- `POST /control/{system_name}`: Apply a control input to an already-initialized system. Returns current state.
-- `GET /state/{system_name}`: Return the current state of the named system for your session.
+**Modern Session-Based:**
+- `POST /simulate/init`: Initialize a new simulation session
+- `POST /simulate/step`: Advance simulation by one step
+- `GET /simulate/state/{session_id}`: Get current state
+- `GET /simulate/history/{session_id}`: Get simulation history
+- `GET /simulate/logs/{session_id}`: Get model logs
+- `POST /simulate/reset`: Reset simulation with optional new parameters
+- `PATCH /simulate/params`: Update model parameters
+
+**Legacy (Deprecated):**
+- `POST /simulate/{system_name}`: Initialize/step a global system instance
+- `POST /control/{system_name}`: Control a global system instance
+- `GET /state/{system_name}`: Get state of a global system instance
 
 
 ## Session Persistence
