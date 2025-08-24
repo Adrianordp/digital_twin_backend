@@ -80,6 +80,22 @@ def test_update_params(sim_manager):
     assert any("Params updated" in log for log in logs)
 
 
+def test_get_model_returns_model_instance(sim_manager):
+    """Test that get_model returns the correct model instance for a session."""
+    session_id = sim_manager.create_session("dummy")
+    model = sim_manager.get_model(session_id)
+
+    # Should be a DummyModel instance and reflect state changes
+    assert hasattr(model, "step")
+    assert hasattr(model, "get_state")
+
+    # Stepping via the model should affect the session state
+    model.step(7)
+    state = sim_manager.get_state(session_id)
+
+    assert state["dummy"] == 7
+
+
 def test_register_model_allows_session_creation():
     """Registering a model should allow creating a session with that name."""
 
