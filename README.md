@@ -21,13 +21,36 @@
    ✅ Session expiration, cleanup, and persistence (in-memory or Redis) supported.
 
 7. **Monitoring & Logging**
-   ⬜ Optional: Add logging/metrics for production.
+   ✅ Basic Python logging added to SimulationManager. See below for usage and configuration.
 
 8. **Documentation**
    ⬜ Next: Update README and API docs to reflect the new session-based workflow.
 
 ---
 
+
+## Logging
+
+The backend uses Python's built-in `logging` module for key events in the simulation manager (session creation, expiration, and errors).
+
+To enable logging output, configure logging in your application entrypoint (e.g., `app/main.py`):
+
+
+```python
+import logging
+
+# Log to 'digital_twin.log', overwrite file on each server start
+logging.basicConfig(
+    level=logging.INFO,  # or DEBUG for more detail
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    filename="digital_twin.log",
+    filemode="w"  # Overwrite log file on each run
+)
+```
+
+You can further customize logging handlers, levels, or direct logs to files as needed. All logs from the simulation manager use the logger name `SimulationManager`.
+
+---
 ## Next Steps
 
 - **Test the API Endpoints:** Use curl, httpie, or Swagger UI to verify the new endpoints work as expected.
