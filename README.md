@@ -2,28 +2,28 @@
 
 ## Simulation API Integration Roadmap
 
-1. **Model Registration**  
+1. **Model Registration**
    ✅ Done! Models are registered via a public method, and tests are in place.
 
-2. **Router Integration**  
+2. **Router Integration**
    ✅ Done! The new session-based simulation router is included in your FastAPI app.
 
-3. **Schema & Validation Enhancements**  
+3. **Schema & Validation Enhancements**
    ✅ Done! Schemas are well-documented and validated.
 
-4. **Testing**  
+4. **Testing**
    ✅ Done! Comprehensive unit tests for SimulationManager, including model registration.
 
-5. **Frontend/Client Integration**  
+5. **Frontend/Client Integration**
    ⬜ Next: Document/test the new endpoints with a client or frontend.
 
-6. **Session Management Improvements**  
+6. **Session Management Improvements**
    ⬜ Optional: Add session expiration, cleanup, or persistence if needed.
 
-7. **Monitoring & Logging**  
+7. **Monitoring & Logging**
    ⬜ Optional: Add logging/metrics for production.
 
-8. **Documentation**  
+8. **Documentation**
    ⬜ Next: Update README and API docs to reflect the new session-based workflow.
 
 ---
