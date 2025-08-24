@@ -83,4 +83,3 @@ class UpdateParamsRequest(BaseModel):
 
     session_id: UUID
     params: Dict[str, Any]
-    params: Dict[str, Any]
