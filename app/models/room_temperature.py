@@ -8,9 +8,12 @@ This module implements a simple thermal model where:
 
 from typing import Dict
 
+from app.models.system_model import SystemModel
 
-class RoomTemperature:
-    """A simple room temperature model with heater control.
+
+class RoomTemperature(SystemModel):
+    """
+    A simple room temperature model with heater control.
 
     Attributes:
         temp (float): Current room temperature in Celsius.
@@ -23,26 +26,62 @@ class RoomTemperature:
             initial_temp (float, optional): Initial room temperature in Celsius.
                 Defaults to 20.0.
         """
+        super().__init__()
         self.temp = initial_temp
 
-    def step(self, heater_power: float, delta_time: float = 1.0) -> None:
-        """Advance the simulation by one time step.
+    def step(self, control_input: float, delta_time: float = 1.0) -> None:
+        """
+        Advance the simulation by one time step.
 
         Updates temperature based on heater power and natural cooling.
-        dT/dt = 0.5 * heater_power - 0.1 * (T - T_ambient)
+        dT/dt = 0.5 * control_input - 0.1 * (T - T_ambient)
         where T_ambient = 20°C
 
         Args:
-            heater_power (float): Heater power input (arbitrary units).
+            control_input (float): Heater power input (arbitrary units).
             delta_time (float, optional): Time step size in seconds. Defaults to
                 1.0.
+
+        Raises:
+            ValueError: If delta_time is not positive.
         """
-        self.temp += 0.5 * heater_power * delta_time - 0.1 * (self.temp - 20)
+
+        self.temp += 0.5 * control_input * delta_time - 0.1 * (self.temp - 20)
+
+        self.history.append(self.get_state())
+        self.logs.append(
+            f"Stepped with input {control_input}, delta_time {delta_time}"
+        )
 
     def get_state(self) -> Dict[str, float]:
-        """Get the current state of the room.
+        """
+        Get the current state of the room.
 
         Returns:
             Dict[str, float]: Dictionary containing current temperature.
         """
         return {"temperature": self.temp}
+
+    def reset(self, **kwargs) -> None:
+        """
+        Reset the room temperature model to initial state, optionally with new
+        parameters.
+
+        Args:
+            **kwargs: Optional new parameter for initial_temp.
+        """
+        self.temp = kwargs.get("initial_temp", 20.0)
+        self.history.clear()
+        self.logs.append("Reset called")
+
+    def update_params(self, **kwargs) -> None:
+        """
+        Update model parameters and log the change.
+
+        Args:
+            **kwargs: Model parameters to update (initial_temp).
+        """
+        if "initial_temp" in kwargs:
+            self.temp = kwargs["initial_temp"]
+
+        self.logs.append(f"Params updated: {kwargs}")
