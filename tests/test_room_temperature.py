@@ -21,7 +21,7 @@ def test_heating() -> None:
     """
     room = RoomTemperature()
     initial_temp = room.temp
-    room.step(heater_power=10.0)
+    room.step(control_input=10.0)
 
     assert room.temp > initial_temp
 
@@ -34,7 +34,7 @@ def test_natural_cooling() -> None:
     """
     room = RoomTemperature(initial_temp=25.0)  # Start above ambient
     initial_temp = room.temp
-    room.step(heater_power=0.0)
+    room.step(control_input=0.0)
 
     assert room.temp < initial_temp  # Should cool down
     assert room.temp > 20.0  # But not instantly to ambient
@@ -50,8 +50,8 @@ def test_time_proportional() -> None:
     room2 = RoomTemperature()
 
     # Apply same power for different durations
-    room1.step(heater_power=10.0, delta_time=1.0)
-    room2.step(heater_power=10.0, delta_time=2.0)
+    room1.step(control_input=10.0, delta_time=1.0)
+    room2.step(control_input=10.0, delta_time=2.0)
 
     temp_change1 = room1.temp - 20.0
     temp_change2 = room2.temp - 20.0
