@@ -39,7 +39,7 @@ class StepRequest(BaseModel):
     """
 
     session_id: UUID
-    control_input: Any
+    control_input: float
     delta_time: float = 1.0
 
 
