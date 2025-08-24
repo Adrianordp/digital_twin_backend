@@ -15,7 +15,7 @@
    ✅ Done! Comprehensive unit tests for SimulationManager, including model registration.
 
 5. **Frontend/Client Integration**
-   ✅ Next: Document/test the new endpoints with a client or frontend.
+   ✅ Done! Endpoints are documented and tested with a Jupyter notebook and example curl commands.
 
 6. **Session Management Improvements**
    ✅ Session expiration, cleanup, and persistence (in-memory or Redis) supported.
@@ -24,7 +24,7 @@
    ✅ Basic Python logging added to SimulationManager. See below for usage and configuration.
 
 8. **Documentation**
-   ⬜ Next: Update README and API docs to reflect the new session-based workflow.
+   ✅ Done! README and API docs updated to reflect the new session-based workflow.
 
 ---
 
@@ -126,46 +126,60 @@ docker build -t digital-twin-backend .
 docker run -p 8000:8000 digital-twin-backend
 ```
 
-## API
 
-All endpoints are defined in `app/routers` and accept simple scalar control
-inputs.
+## API: Session-Based Workflow
 
-- POST /simulate/{system_name}
-  - Description: Initialize (if needed) and step the named system by one time
-    step using the provided control input.
-  - Parameters:
-    - Path: `system_name` — e.g. `water_tank` or `room_temperature`
-    - Query/body: `control_input` (float)
-  - Response: JSON state returned by the model's `get_state()` method.
+All endpoints are defined in `app/routers` and use a session-based workflow. Each simulation is managed in a session, which is created and tracked automatically by the backend. Sessions allow you to simulate, control, and query the state of individual system instances.
 
-  Example:
+### Session Lifecycle
 
-  ```bash
-  curl -X POST \
-    "http://localhost:8000/simulate/water_tank?control_input=10.0"
-  ```
+1. **Start a Simulation Session**
+   - Use `POST /simulate/{system_name}` to create a new session (if one does not exist) and advance the simulation by one step.
+   - The backend returns the current state and a session cookie (or token) to identify your session.
 
-- POST /control/{system_name}
-  - Description: Apply a control input to an already-initialized system (the
-    project shares state between simulate and control routers).
-  - Parameters: same as `/simulate/{system_name}`
+2. **Advance Simulation or Apply Control**
+   - Use `POST /simulate/{system_name}` or `POST /control/{system_name}` to advance the simulation or apply control input. The session is identified by the session cookie/token.
 
-  Example:
+3. **Query State**
+   - Use `GET /state/{system_name}` to retrieve the current state for your session.
 
-  ```bash
-  curl -X POST \
-    "http://localhost:8000/control/water_tank?control_input=5.0"
-  ```
+4. **Session Expiration**
+   - Sessions expire automatically after a period of inactivity (default: 30 minutes).
 
-- GET /state/{system_name}
-  - Description: Return the current state of the named system.
+### Example Usage
 
-  Example:
+#### 1. Start a Simulation Session and Step
 
-  ```bash
-  curl "http://localhost:8000/state/water_tank"
-  ```
+```bash
+curl -X POST \
+  -c cookies.txt \
+  "http://localhost:8000/simulate/water_tank?control_input=10.0"
+```
+
+#### 2. Apply Control Input (using session cookie)
+
+```bash
+curl -X POST \
+  -b cookies.txt \
+  "http://localhost:8000/control/water_tank?control_input=5.0"
+```
+
+#### 3. Query State (using session cookie)
+
+```bash
+curl -b cookies.txt "http://localhost:8000/state/water_tank"
+```
+
+> **Note:**
+> - The backend manages sessions using cookies by default. If you use a custom client, ensure cookies are preserved between requests.
+> - Each session is tied to a specific system instance and user.
+> - Sessions are stored in memory or Redis, depending on configuration.
+
+### Endpoints Summary
+
+- `POST /simulate/{system_name}`: Initialize (if needed) and step the named system by one time step using the provided control input. Returns current state.
+- `POST /control/{system_name}`: Apply a control input to an already-initialized system. Returns current state.
+- `GET /state/{system_name}`: Return the current state of the named system for your session.
 
 
 ## Session Persistence
