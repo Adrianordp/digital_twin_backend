@@ -15,7 +15,7 @@
    ✅ Done! Comprehensive unit tests for SimulationManager, including model registration.
 
 5. **Frontend/Client Integration**
-   ⬜ Next: Document/test the new endpoints with a client or frontend.
+   ✅ Next: Document/test the new endpoints with a client or frontend.
 
 6. **Session Management Improvements**
    ⬜ Optional: Add session expiration, cleanup, or persistence if needed.
